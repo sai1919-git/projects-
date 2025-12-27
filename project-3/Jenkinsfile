@@ -6,7 +6,7 @@ pipeline{
   stages{
     stage('checkout') {
       steps{
-      git branch:'main' , url: 
+      git branch:'main' , url: https://github.com/sai1919-git/projects.git
       }
     }
     stage('build image')  {
