@@ -31,7 +31,7 @@ pipeline{
     }
     stage('push image'){
       steps{
-        sh "docker push $ECR_REPO:$IMAGE_NAME"
+        sh "docker push $ECR_REPO:$IMAGE_TAG"
       }
     }
   }
