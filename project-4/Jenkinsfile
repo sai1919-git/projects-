@@ -19,11 +19,21 @@ pipeline{
         }
       }
     }
-    stage('ecr login'){
-      steps{
-        sh """ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO """
-      }
+    stage('ECR Login') {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'aws-ecr',           // lowercase 'credentialsId'
+            usernameVariable: 'AWS_ACCESS_KEY_ID',
+            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+        )]) {
+            sh """
+            aws ecr get-login-password --region $AWS_REGION | \
+            docker login --username AWS --password-stdin $ECR_REPO
+            """
+        }
     }
+}
+
     stage('tag image') {
       steps{
         sh """ docker tag $IMAGE_NAME:$IMAGE_TAG $ECR_REPO:$IMAGE_TAG """
