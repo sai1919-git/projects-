@@ -14,7 +14,7 @@ pipeline{
     }
     stage('build'){
       steps{
-        dir('projects/project-4'){
+        dir('project-4'){
         sh "docker build -t $IMAGE_NAME:$IMAGE_TAG ."
         }
       }
