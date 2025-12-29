@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    environment {
+        ECR_URI = "<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/my-project6"
+        IMAGE_NAME = "myimage"
+        AWS_REGION = "ap-south-1"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/sai1919-git/projects'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                    cd project-6
+                    sonar-scanner \
+                    -Dsonar.projectKey=project-6 \
+                    -Dsonar.sources=.
+                    '''
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh '''
+                cd project-6
+                docker build -t $IMAGE_NAME .
+                '''
+            }
+        }
+
+        stage('Login to ECR') {
+            steps {
+                sh '''
+                aws ecr get-login-password --region $AWS_REGION | \
+                docker login --username AWS --password-stdin $ECR_URI
+                '''
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                sh '''
+                docker tag $IMAGE_NAME:latest $ECR_URI:$IMAGE_NAME
+                docker push $ECR_URI:$IMAGE_NAME
+                '''
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                sh '''
+                cd project-6
+                # Replace IMAGE_URI in deployment.yaml with actual ECR image
+                sed -i "s|IMAGE_URI|$ECR_URI:$IMAGE_NAME|g" deployment.yaml
+                kubectl apply -f deployment.yaml
+                kubectl apply -f service.yaml
+                '''
+            }
+        }
+    }
+}
