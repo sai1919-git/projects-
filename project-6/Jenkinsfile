@@ -51,7 +51,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 dir('project-6') {
-                    sh "sudo docker build -t $IMAGE_NAME ."
+                    sh "docker build -t $IMAGE_NAME ."
                 }
             }
         }
@@ -60,7 +60,7 @@ pipeline {
             steps {
                 sh """
                 aws ecr get-login-password --region $AWS_REGION | \
-                sudo docker login --username AWS --password-stdin $ECR_URI
+                docker login --username AWS --password-stdin $ECR_URI
                 """
             }
         }
@@ -69,8 +69,8 @@ pipeline {
             steps {
                 sh """
                 aws ecr create-repository --repository-name project-6 --region $AWS_REGION || true
-                sudo docker tag $IMAGE_NAME:latest $ECR_URI:latest
-                sudo docker push $ECR_URI:latest
+                docker tag $IMAGE_NAME:latest $ECR_URI:latest
+                docker push $ECR_URI:latest
                 """
             }
         }
