@@ -16,21 +16,20 @@ pipeline {
             }
         }
 
-       stage('SonarQube Analysis') {
-    steps {
-        withSonarQubeEnv('sonarqube') {
-            dir('project/project-6') {
-                sh """
-                echo "Using Sonar Scanner at $SONAR_SCANNER_HOME"
-                $SONAR_SCANNER_HOME/bin/sonar-scanner \
-                  -Dsonar.projectKey=project-6 \
-                  -Dsonar.sources=.
-                """
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    dir('project-6') {  // Correct folder inside workspace
+                        sh """
+                        echo "Using Sonar Scanner at \$SONAR_SCANNER_HOME"
+                        \$SONAR_SCANNER_HOME/bin/sonar-scanner \
+                          -Dsonar.projectKey=project-6 \
+                          -Dsonar.sources=.
+                        """
+                    }
+                }
             }
         }
-    }
-}
-
 
         stage('Quality Gate') {
             steps {
@@ -42,7 +41,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                dir('project/project-6') {
+                dir('project-6') {
                     sh "docker build -t $IMAGE_NAME ."
                 }
             }
@@ -72,7 +71,7 @@ pipeline {
 
         stage('Deploy to EKS') {
             steps {
-                dir('project/project-6') {
+                dir('project-6') {
                     sh """
                     # Replace IMAGE_URI in deployment.yaml with actual ECR image
                     sed -i 's|IMAGE_URI|$ECR_URI:latest|g' deployment.yaml
@@ -95,4 +94,3 @@ pipeline {
         }
     }
 }
-
