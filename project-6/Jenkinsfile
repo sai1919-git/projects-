@@ -16,30 +16,27 @@ pipeline {
             }
         }
 
-       stage('SonarQube Analysis') {
-    steps {
-        script {
-            // This resolves the Jenkins-installed scanner location
-            def scannerHome = tool name: 'sonarqube', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-
-            withSonarQubeEnv('sonarqube') {
-                dir('project-6') {
-                    sh """
-                    echo "Scanner resolved at: ${scannerHome}"
-                    ${scannerHome}/bin/sonar-scanner \
-                      -Dsonar.projectKey=project-6 \
-                      -Dsonar.sources=.
-                    """
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    dir('project-6') {
+                        script {
+                            def scannerHome = tool 'sonarqube'
+                            sh """
+                            echo "Using scanner at: ${scannerHome}"
+                            ${scannerHome}/bin/sonar-scanner \
+                              -Dsonar.projectKey=project-6 \
+                              -Dsonar.sources=.
+                            """
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -65,10 +62,7 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 sh """
-                # Ensure repository exists
                 aws ecr create-repository --repository-name project-6 --region $AWS_REGION || true
-
-                # Tag and push
                 docker tag $IMAGE_NAME:latest $ECR_URI:latest
                 docker push $ECR_URI:latest
                 """
@@ -79,10 +73,7 @@ pipeline {
             steps {
                 dir('project-6') {
                     sh """
-                    # Replace IMAGE_URI in deployment.yaml with actual ECR image
                     sed -i 's|IMAGE_URI|$ECR_URI:latest|g' deployment.yaml
-
-                    # Apply deployment and service
                     kubectl apply -f deployment.yaml
                     kubectl apply -f service.yaml
                     """
@@ -96,7 +87,7 @@ pipeline {
             echo "Pipeline completed successfully! 🎉"
         }
         failure {
-            echo "Pipeline failed! ❌ Check logs for details."
+            echo "Pipeline failed! ❌ Check logs."
         }
     }
 }
