@@ -16,19 +16,17 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube') {
-                    dir('project/project-6') {
-                        sh """
-                        sonar-scanner \
-                          -Dsonar.projectKey=project-6 \
-                          -Dsonar.sources=.
-                        """
-                    }
-                }
+       stage('SonarQube Analysis') {
+    steps {
+        withSonarQubeEnv('sonarqube') {
+            dir('project/project-6') {
+                // Use the Jenkins-installed scanner
+                sh "\$SONAR_SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=project-6 -Dsonar.sources=."
             }
         }
+    }
+}
+
 
         stage('Quality Gate') {
             steps {
