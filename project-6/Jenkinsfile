@@ -19,18 +19,20 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
-                    sh '''
-                    cd project-6
-                    sonar-scanner \
-                    -Dsonar.projectKey=project-6 \
-                    -Dsonar.sources=.
-                    '''
+                    dir('project/project-6') {
+                        sh """
+                        sonar-scanner \
+                          -Dsonar.projectKey=project-6 \
+                          -Dsonar.sources=.
+                        """
+                    }
                 }
             }
         }
+
         stage('Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'MINUTES') {
+                timeout(time: 3, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -38,41 +40,57 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh '''
-                cd project-6
-                docker build -t $IMAGE_NAME .
-                '''
+                dir('project/project-6') {
+                    sh "docker build -t $IMAGE_NAME ."
+                }
             }
         }
 
         stage('Login to ECR') {
             steps {
-                sh '''
+                sh """
                 aws ecr get-login-password --region $AWS_REGION | \
                 docker login --username AWS --password-stdin $ECR_URI
-                '''
+                """
             }
         }
 
         stage('Push to ECR') {
             steps {
-                sh '''
-                docker tag $IMAGE_NAME:latest $ECR_URI:$IMAGE_NAME
-                docker push $ECR_URI:$IMAGE_NAME
-                '''
+                sh """
+                # Ensure repository exists
+                aws ecr create-repository --repository-name project-6 --region $AWS_REGION || true
+
+                # Tag and push
+                docker tag $IMAGE_NAME:latest $ECR_URI:latest
+                docker push $ECR_URI:latest
+                """
             }
         }
 
         stage('Deploy to EKS') {
             steps {
-                sh '''
-                cd project-6
-                # Replace IMAGE_URI in deployment.yaml with actual ECR image
-                sed -i "s|IMAGE_URI|$ECR_URI:$IMAGE_NAME|g" deployment.yaml
-                kubectl apply -f deployment.yaml
-                kubectl apply -f service.yaml
-                '''
+                dir('project/project-6') {
+                    sh """
+                    # Replace IMAGE_URI in deployment.yaml with actual ECR image
+                    sed -i 's|IMAGE_URI|$ECR_URI:latest|g' deployment.yaml
+
+                    # Apply deployment and service
+                    kubectl apply -f deployment.yaml
+                    kubectl apply -f service.yaml
+                    """
+                }
             }
         }
     }
+
+    post {
+        success {
+            echo "Pipeline completed successfully! 🎉"
+        }
+        failure {
+            echo "Pipeline failed! ❌ Check logs for details."
+        }
+    }
 }
+
