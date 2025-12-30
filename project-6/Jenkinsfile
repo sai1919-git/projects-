@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        ECR_URI = "<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/my-project6"
+        ECR_URI = "641944126006.dkr.ecr.ap-south-1.amazonaws.com/project-6"
         IMAGE_NAME = "myimage"
         AWS_REGION = "ap-south-1"
     }
