@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = "ap-south-1"
+        AWS_ACCOUNT_ID = "6419-4412-6006"  
+        ECR_REPO = "my-repo"
+        IMAGE_TAG = "latest"
+        DOCKER_USERNAME = "sai604"
+        GIT_USERNAME = "sai1919"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git "https://github.com/${GIT_USERNAME}/cloud-native-app.git"
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_USERNAME}/${ECR_REPO}:${IMAGE_TAG} ./app"
+            }
+        }
+
+        stage('Login to AWS ECR') {
+            steps {
+                sh """
+                aws ecr get-login-password --region ${AWS_REGION} | \
+                docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                """
+            }
+        }
+
+        stage('Tag and Push to ECR') {
+            steps {
+                sh """
+                docker tag ${DOCKER_USERNAME}/${ECR_REPO}:${IMAGE_TAG} \
+                ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+                docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                sh "kubectl apply -f k8s/"
+            }
+        }
+
+        stage('SonarQube Scan') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh 'sonar-scanner'
+                }
+            }
+        }
+    }
+}
