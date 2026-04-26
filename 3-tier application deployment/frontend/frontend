@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3-Tier App</title>
+</head>
+<body>
+    <h1>Frontend Running</h1>
+    <button onclick="getData()">Fetch Backend</button>
+    <p id="result"></p>
+
+    <script>
+        async function getData() {
+            const res = await fetch("/api/data");
+            const data = await res.json();
+            document.getElementById("result").innerText = data.message;
+        }
+    </script>
+</body>
+</html>
