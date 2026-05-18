@@ -8,4 +8,6 @@ availability_zone   = "ap-south-1b"
 
 instance_type       = "t3.micro"
 
-ami_id              = "ami-0f58b397bc5c1f2e8"
+ami_id              = "ami-07a00cf47dbbc844c"
+
+key_name = "my-key"
